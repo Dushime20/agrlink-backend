@@ -8,5 +8,5 @@ import orderRoute from "./orderRoute";
 const route = Router();
 route.use("/user",authRoute);
 route.use("/order",authenticateToken,orderRoute);
-route.use("/product",authenticateToken,productRoute)
+route.use("/product",productRoute)
 export default route;
