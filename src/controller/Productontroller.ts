@@ -61,12 +61,13 @@ export const addProduct = asyncWrapper(async(req:AuthenticatedRequest,res:Respon
 
 
 export const getAllProducts = asyncWrapper(async(req:Request,res:Response,next:NextFunction) => {
-    const products = await Product.find(); // Fetch all products from the database
+    const products = await Product.find().populate('seller'); // Fetch all products from the database
 
     res.status(200).json({
         success: true,
         count: products.length,
         products,
+        
     });
 });
 
@@ -91,7 +92,8 @@ export const getProductById = asyncWrapper(async (req: Request, res: Response, n
 export const getBySellerId = asyncWrapper(async(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
 
     const sellerId = req.user?.id
-    const product = await Product.findById(sellerId).populate('seller');
+    const product = await Product.find({ seller: sellerId }).populate('seller');
+
      
     if (!product) {
         return next(new NotFoundError("Product not found"));

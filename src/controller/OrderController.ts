@@ -25,7 +25,16 @@ export const createOrder = asyncWrapper(
       return next(new BadRequestError("Buyer not authenticated"));
     }
 
-    if (!productId || !quantity || !shippingAddress || !paymentMethod) {
+    if (
+      !productId ||
+      !quantity ||
+      !shippingAddress ||
+      !shippingAddress.fullName ||
+      !shippingAddress.phoneNumber ||
+      !shippingAddress.streetAddress ||
+      !shippingAddress.city ||
+      !paymentMethod
+    ) {
       return next(new BadRequestError("Missing required order fields"));
     }
 
@@ -50,7 +59,12 @@ export const createOrder = asyncWrapper(
         price: productDoc.price,
       },
       totalAmount,
-      shippingAddress,
+      shippingAddress: {
+        fullName: shippingAddress.fullName,
+        phoneNumber: shippingAddress.phoneNumber,
+        streetAddress: shippingAddress.streetAddress,
+        city: shippingAddress.city,
+      },
       paymentMethod,
       transactionId,
       deliveryDate: deliveryDate || null,

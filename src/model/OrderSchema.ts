@@ -1,6 +1,30 @@
 import mongoose from "mongoose";
 
-const OrderSchema =  new mongoose.Schema({
+// Embedded schema for the shipping address
+const ShippingAddressSchema = new mongoose.Schema({
+  fullName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  phoneNumber: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  streetAddress: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  city: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+}, { _id: false }); // Disable _id for embedded schema
+
+const OrderSchema = new mongoose.Schema({
   orderId: {
     type: String,
     required: true,
@@ -9,31 +33,30 @@ const OrderSchema =  new mongoose.Schema({
   },
   buyer: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',  // Assuming the User model stores buyer data
+    ref: 'User',
     required: true,
   },
   seller: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',  // Assuming the User model stores seller data
+    ref: 'User',
     required: true,
   },
   product: {
-  productId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true,
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
   },
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
-  price: {
-    type: Number,
-    required: true,
-  },
-},
-
   totalAmount: {
     type: Number,
     required: true,
@@ -45,7 +68,7 @@ const OrderSchema =  new mongoose.Schema({
     default: 'Pending',
   },
   shippingAddress: {
-    type: String,
+    type: ShippingAddressSchema,
     required: true,
   },
   paymentStatus: {
@@ -68,6 +91,7 @@ const OrderSchema =  new mongoose.Schema({
   transactionId: {
     type: String,
     unique: true,
+    sparse: true, // Allows multiple nulls
   },
 });
 
