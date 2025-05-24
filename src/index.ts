@@ -8,29 +8,40 @@ import route from './route/index';
 dotenv.config();
 
 const app = express();
-const port = 3300;
-const databaseUrl: string = process.env.DATABASE_URL!;
+const port = process.env.PORT || 3300;
+const databaseUrl = process.env.DATABASE_URL;
+
 if (!databaseUrl) {
   throw new Error("DATABASE_URL environment variable is not set.");
 }
 
+// Choose origin based on environment
+const allowedOrigin =
+  process.env.NODE_ENV === 'production'
+    ? 'https://agrlink.vercel.app'
+    : 'http://localhost:5173';
+
 app.use(cors({
-  origin: "http://localhost:5173",
-  methods: ["POST","GET","PUT","PATCH","DELETE"],
-  allowedHeaders: ['content-type','Authorization']
+  origin: allowedOrigin,
+  methods: ['POST', 'GET', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json());
 
-app.use("/agritech/v1", route);
+app.use('/agritech/v1', route);
 
-// Cast error handler to proper Express error handler type
+// Cast errorHandler to Express error handler type
 app.use(errorHandler as express.ErrorRequestHandler);
 
-const server = app.listen(port, () => {
-  console.log(`server is running at http://localhost:${port}`);
-});
-
 mongoose.connect(databaseUrl)
-  .then(() => console.log("DB connected"))
-  .catch(err => console.log(err.message));
+  .then(() => {
+    console.log('DB connected');
+    app.listen(port, () => {
+      console.log(`Server is running at http://localhost:${port}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to connect to DB:', err.message);
+    process.exit(1);
+  });
