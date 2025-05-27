@@ -38,93 +38,135 @@ const getPaypackToken = async (): Promise<string> => {
 };
 
 // Initiate PayPack payment
+// Initiate PayPack payment with error logging
 export const initiatePaypackPayment = asyncWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { orderId } = req.params;
-    if (!orderId) return next(new BadRequestError('Missing orderId'));
+    try {
+      const { orderId } = req.params;
+      if (!orderId) return next(new BadRequestError('Missing orderId'));
 
-    const order = await Order.findOne({ orderId }).populate('buyer', 'phoneNumber name');
-    if (!order) return next(new NotFoundError('Order not found'));
+      const order = await Order.findOne({ orderId }).populate('buyer', 'phoneNumber name');
+      if (!order) return next(new NotFoundError('Order not found'));
 
-    const buyer = order.buyer as unknown as {
-      phoneNumber: string;
-      name: string;
-    };
+      const buyer = order.buyer as unknown as {
+        phoneNumber: string;
+        name: string;
+      };
 
-    if (!buyer.phoneNumber) {
-      return next(new BadRequestError('Buyer phone number is missing'));
-    }
-
-    const token = await getPaypackToken();
-    const transactionId = `TX-${Date.now()}`;
-
-    order.transactionId = transactionId;
-    await order.save();
-
-    await axios.post(
-      `${PAYPACK_BASE_URL}/collection/request`,
-      {
-        amount: order.totalAmount,
-        phone: buyer.phoneNumber,
-        tx_ref: transactionId,
-        callback_url: CALLBACK_URL,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (!buyer.phoneNumber) {
+        return next(new BadRequestError('Buyer phone number is missing'));
       }
-    );
 
-    res.status(200).json({
-      success: true,
-      message: 'Payment request sent to user phone',
-      reference: transactionId,
-      orderId: order.orderId,
-    });
+      const token = await getPaypackToken();
+      const transactionId = `TX-${Date.now()}`;
+
+      order.transactionId = transactionId;
+      await order.save();
+
+      const response = await axios.post(
+        `${PAYPACK_BASE_URL}/collection/request`,
+        {
+          amount: order.totalAmount,
+          phone: buyer.phoneNumber,
+          tx_ref: transactionId,
+          callback_url: CALLBACK_URL,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment request sent to user phone',
+        reference: transactionId,
+        orderId: order.orderId,
+        data: response.data,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers,
+        });
+        return res.status(error.response?.status || 500).json({
+          success: false,
+          message: 'Payment initiation failed',
+          error: error.message,
+          details: error.response?.data,
+        });
+      } else {
+        console.error('Unknown error:', error);
+        return res.status(500).json({ success: false, message: 'Internal Server Error', error });
+      }
+    }
   }
 );
 
-// Verify PayPack payment manually (if needed)
+// Verify PayPack payment with error logging
 export const verifyPaypackPayment = asyncWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
-    const transactionId = req.query.transactionId as string;
-    if (!transactionId) return next(new BadRequestError('Missing transactionId'));
+    try {
+      const transactionId = req.query.transactionId as string;
+      if (!transactionId) return next(new BadRequestError('Missing transactionId'));
 
-    const order = await Order.findOne({ transactionId });
-    if (!order) return next(new NotFoundError('Order not found'));
+      const order = await Order.findOne({ transactionId });
+      if (!order) return next(new NotFoundError('Order not found'));
 
-    const token = await getPaypackToken();
+      const token = await getPaypackToken();
 
-    const response = await axios.get<PaypackPaymentResponse>(
-      `${PAYPACK_BASE_URL}/transactions/${transactionId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await axios.get<PaypackPaymentResponse>(
+        `${PAYPACK_BASE_URL}/transactions/${transactionId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const payment = response.data;
+
+      if (!payment || !payment.status) {
+        return res.status(400).json({ success: false, message: 'Invalid payment data received' });
       }
-    );
 
-    const payment = response.data;
+      if (payment.status.toUpperCase() === 'SUCCESSFUL') {
+        order.paymentStatus = 'Paid';
+        order.paymentVerified = true;
+        order.paymentMetadata = payment;
+        await order.save();
 
-    if (!payment || !payment.status) {
-      return res.status(400).json({ success: false, message: 'Invalid payment data received' });
+        return res.status(200).json({ success: true, message: 'Payment verified', order });
+      }
+
+      return res.status(200).json({
+        success: false,
+        message: 'Payment not successful yet',
+        status: payment.status,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers,
+        });
+        return res.status(error.response?.status || 500).json({
+          success: false,
+          message: 'Payment verification failed',
+          error: error.message,
+          details: error.response?.data,
+        });
+      } else {
+        console.error('Unknown error:', error);
+        return res.status(500).json({ success: false, message: 'Internal Server Error', error });
+      }
     }
-
-    if (payment.status.toUpperCase() === 'SUCCESSFUL') {
-      order.paymentStatus = 'Paid';
-      order.paymentVerified = true;
-      order.paymentMetadata = payment;
-      await order.save();
-
-      return res.status(200).json({ success: true, message: 'Payment verified', order });
-    }
-
-    return res.status(200).json({
-      success: false,
-      message: 'Payment not successful yet',
-      status: payment.status,
-    });
   }
 );
 
