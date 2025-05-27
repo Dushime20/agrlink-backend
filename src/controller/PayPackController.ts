@@ -7,7 +7,7 @@ import { NotFoundError } from '../error/NotFoundError';
 
 const PAYPACK_CLIENT_ID = process.env.PAYPACK_CLIENT_ID;
 const PAYPACK_CLIENT_SECRET = process.env.PAYPACK_CLIENT_SECRET;
-const PAYPACK_BASE_URL = 'https://paypack.rw/api';
+const PAYPACK_BASE_URL = 'https://sandbox.mypaypack.rw';
 const CALLBACK_URL = process.env.PAYPACK_CALLBACK_URL || '';
 
 let cachedToken: string | null = null;
