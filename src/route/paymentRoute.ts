@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { handlePaypackNotification,initiatePaypackPayment, verifyPaypackPayment } from '../controller/PayPackController';
+import { checkPaypackHealth, handlePaypackNotification,initiatePaypackPayment, verifyPaypackPayment } from '../controller/PayPackController';
 
 
 const paymentRoute = Router();
@@ -8,7 +8,10 @@ const paymentRoute = Router();
 paymentRoute.post('/paypack/initiate/:orderId', initiatePaypackPayment);
 paymentRoute.get('/paypack/verify', verifyPaypackPayment);
 // PayPack sends payment result here (instead of waiting for frontend to confirm)
-paymentRoute.post('/paypack/nitify', handlePaypackNotification);
+paymentRoute.post('/paypack/notify', handlePaypackNotification);
+// Health check endpoint
+paymentRoute.get('/paypack/health', checkPaypackHealth);
+
 
 
 export default paymentRoute;

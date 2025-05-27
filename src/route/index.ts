@@ -10,5 +10,5 @@ const route = Router();
 route.use("/user",authRoute);
 route.use("/order",authenticateToken,orderRoute);
 route.use("/product",productRoute)
-route.use("/payment",paymentRoute)
+route.use("/payment",authenticateToken,paymentRoute)
 export default route;
