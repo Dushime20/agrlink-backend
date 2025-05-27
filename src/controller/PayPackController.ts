@@ -103,7 +103,7 @@ export const initiatePaypackPayment = asyncWrapper(
       }
 
       // Validate phone number format (Rwanda format)
-      const phoneRegex = /^(\+?25)?[078]\d{8}$/;
+      const phoneRegex = /^(\+?25)?0(78|79)\d{7}$/;
       if (!phoneRegex.test(buyer.phoneNumber.replace(/\s/g, ''))) {
         return next(new BadRequestError('Invalid phone number format'));
       }
