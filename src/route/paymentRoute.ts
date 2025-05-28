@@ -8,7 +8,7 @@ const paymentRoute = Router();
 paymentRoute.post('/paypack/initiate/:orderId', initiatePaypackPayment);
 paymentRoute.get('/paypack/verify', verifyPaypackPayment);
 // PayPack sends payment result here (instead of waiting for frontend to confirm)
-paymentRoute.post('/paypack/notify', handlePaypackNotification);
+paymentRoute.post('/paypack/notification', handlePaypackNotification);
 // Health check endpoint
 paymentRoute.get('/paypack/health', checkPaypackHealth);
 

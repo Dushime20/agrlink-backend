@@ -27,7 +27,16 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      // Store raw body for signature validation
+      (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+    },
+  })
+);
+
+
 
 app.use('/agritech/v1', route);
 
