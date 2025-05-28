@@ -161,7 +161,7 @@ export const initiatePaypackPayment = asyncWrapper(
       );
     }
 
-    const normalizedPhone = "25" + cleaned.replace(/^(\+?25|0)/, "");
+    const normalizedPhone = "250" + cleaned.replace(/^(\+?250|0)/, "");
 
     const token = await getPaypackToken();
     const transactionId = `TX-${orderId}-${Date.now()}`;
