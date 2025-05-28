@@ -163,6 +163,16 @@ export const initiatePaypackPayment = asyncWrapper(
 
     const normalizedPhone = "250" + cleaned.replace(/^(\+?250|0)/, "");
 
+    let provider = "";
+       if (normalizedPhone.startsWith("25078") || normalizedPhone.startsWith("25079")) {
+          provider = "mtn-rw";
+          } else {
+               return next(
+                    new BadRequestError(`Unsupported phone provider for number: ${buyer.phoneNumber}`)
+               );
+            }
+
+
     const token = await getPaypackToken();
     const transactionId = `TX-${orderId}-${Date.now()}`;
 
@@ -173,6 +183,7 @@ export const initiatePaypackPayment = asyncWrapper(
     const payload = {
       amount: Math.round(order.totalAmount),
       number: normalizedPhone,
+      provider,
       reference: transactionId,
       callback_url: CALLBACK_URL,
       redirect_url: CALLBACK_URL // Optional, but helpful for frontend redirection
