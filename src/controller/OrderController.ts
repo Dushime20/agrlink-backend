@@ -55,6 +55,9 @@ export const createOrder = asyncWrapper(
     const transactionId = `TXN-${randomBytes(8).toString('hex')}`;
 
 
+    const defaultDeliveryDate = new Date();
+    defaultDeliveryDate.setDate(defaultDeliveryDate.getDate() + 3);
+
     const order = await Order.create({
       orderId: `ORD-${Date.now()}`,
       buyer,
@@ -68,7 +71,7 @@ export const createOrder = asyncWrapper(
       shippingAddress,
       paymentMethod,
       transactionId,
-      deliveryDate: deliveryDate || null,
+      deliveryDate: deliveryDate ? new Date(deliveryDate) : defaultDeliveryDate,
       paymentChannel: paymentChannel || "card",
       paymentMetadata: paymentMetadata || {},
       paymentVerified: paymentVerified || false,
@@ -77,35 +80,6 @@ export const createOrder = asyncWrapper(
     res.status(201).json({ success: true, order });
   }
 );
-
-
-export const getAllProducts = asyncWrapper(async(req:Request,res:Response,next:NextFunction) => {
-    const products = await Product.find().populate('seller'); // Fetch all products from the database
-
-    res.status(200).json({
-        success: true,
-        count: products.length,
-        products,
-        
-    });
-});
-
-export const getProductById = asyncWrapper(async (req: Request, res: Response, next: NextFunction) => {
-  const { id } = req.params;
-
-  const product = await Product.findById(id).populate('seller');
-
-  if (!product) {
-    return next(new NotFoundError("Product not found"));
-  }
-
-  res.status(200).json({
-    success: true,
-    product,
-    seller: product.seller,
-  });
-});
-
 
 
 export const getAllOrders = asyncWrapper(
@@ -126,8 +100,8 @@ export const getOrdersByBuyerId = asyncWrapper(
     const buyerId = req.user?.id;
 
     const orders = await Order.find({ buyer: buyerId })
-      .populate("seller", "name email")
-      .populate("product.productId", "name price");
+      .populate("seller", "name email phoneNumber")
+      .populate("product.productId", "name price images ");
 
     res.status(200).json({ success: true, orders });
   }

@@ -131,3 +131,22 @@ export const filterProductByNameAndPriceAndCategory = asyncWrapper(async(req:Req
         products,
     });
 });
+
+
+export const deleteProduct = asyncWrapper(async(req:Request,res:Response,next:NextFunction)=> {
+    const { id } = req.params;
+
+    // Check if Product exists
+    const findProduct = await Product.findById(id);
+    if (!findProduct) {
+        return next(new NotFoundError("Product not found!"));
+    }
+
+    // Delete Product
+    const deletedProduct = await Product.findByIdAndDelete(id);
+
+    return res.status(200).json({
+        success: true,
+        message: "Successfully deleted Product",
+    });
+});

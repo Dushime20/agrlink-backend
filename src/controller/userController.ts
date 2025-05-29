@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { BadRequestError } from "../error/BadREquestError";
+import { AuthenticatedRequest } from "../middleware/authenticationToken";
 
 import { NotFoundError } from "../error/NotFoundError";
 import { UnauthorizedError } from "../error/UnauthorizedError";
@@ -131,6 +132,20 @@ const token = jwt.sign(
 
   export const getUserById = asyncWrapper(async(req:Request,res:Response,next:NextFunction)=>{
     const findUser = await User.findById(req.params.id)
+    if(!findUser){
+        return next(new NotFoundError("user not found"))
+    }
+
+    return res.status(200).json({
+        message:"user Found successfully",
+        findUser,
+    })
+  })
+
+  export const getUserProfile = asyncWrapper(async(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
+    const user = req.user?.id;
+    if (!user) return next(new BadRequestError("User not authenticated"));
+    const findUser = await User.findById(user)
     if(!findUser){
         return next(new NotFoundError("user not found"))
     }
