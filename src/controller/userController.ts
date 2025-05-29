@@ -156,26 +156,45 @@ const token = jwt.sign(
     })
   })
 
-export const updateUserProfile = asyncWrapper(async(req:Request,res:Response,next:NextFunction)=> {
+export const updateUserProfile = asyncWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { password, confirmPassword, username, phoneNumber, address, email, role } = req.body;
     const { id } = req.params;
 
     // Check if user exists
     const findUser = await User.findById(id);
     if (!findUser) {
-        return next(new NotFoundError("User not found!"));
+      return next(new NotFoundError("User not found!"));
     }
 
-    // Update user profile
-    const updatedUser = await User.findByIdAndUpdate(id, req.body, {
-        new: true, // Return the updated document
-        runValidators: true, // Ensure the update follows schema validation
-    });
+    // If password is being updated, ensure confirmPassword matches
+    if (password || confirmPassword) {
+      if (password !== confirmPassword) {
+        return next(new BadRequestError("Passwords do not match!"));
+      }
+
+      // Hash the new password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      findUser.password = hashedPassword;
+    }
+
+    // Update allowed fields only
+    if (username !== undefined) findUser.username = username;
+    if (phoneNumber !== undefined) findUser.phoneNumber = phoneNumber;
+    if (address !== undefined) findUser.address = address;
+    if (email !== undefined) findUser.email = email;
+    if (role !== undefined) findUser.role = role;
+
+    // Save the updated user
+    const updatedUser = await findUser.save();
 
     return res.status(200).json({
-        user: updatedUser,
-        message: "Successfully updated user profile",
+      message: "Successfully updated user profile",
+      user: updatedUser,
     });
-});
+  }
+);
 
 
 export const deleteUser = asyncWrapper(async(req:Request,res:Response,next:NextFunction)=> {
